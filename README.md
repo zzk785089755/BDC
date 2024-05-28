@@ -1,7 +1,7 @@
 # BDC-Occ: Binarized Deep Convolution Unit For Binarized Occupancy Network
 
 
- [Paper] | [Project](https://github.com/zzk785089755/BDC) | [pretrained models]
+ [Paper](https://arxiv.org/abs/2405.17037) | [Project](https://github.com/zzk785089755/BDC) | [pretrained models](https://drive.google.com/drive/folders/1mCQcnAgqfijLyiPurekxWcnf9oJ0ZvsZ)
 
 <hr />
 
@@ -13,7 +13,6 @@
 </p>
 
 ---
-
 ##  Dependencies and Installation
 
 - Python >= 3.8 (Recommend to use [Anaconda](https://www.anaconda.com/download/#linux) or [Miniconda](https://docs.conda.io/en/latest/miniconda.html))
@@ -41,6 +40,22 @@
     ```
 
 **More details please see the README in folder of BDC-Occ and BDC-Det** 
+
+## Acknowledgement
+Many thanks to the authors of [BEVDet](https://github.com/HuangJunJie2017/BEVDet), [FlashOcc](https://github.com/Yzichen/FlashOCC.git),
+[BiSRNet](https://github.com/caiyuanhao1998/BiSCI.git) and [BBCU](https://github.com/Zj-BinXia/BBCU.git)
+
+
+## BibTeX
+
+    @artical{zhang2024bdcocc,
+        title={BDC-Occ: Binarized Deep Convolution Unit For Binarized Occupancy Network}, 
+        author={Zongkai Zhang and Zidong Xu and Wenming Yang and Qingmin Liao and Jing-Hao Xue},
+        year={2024},
+        eprint={2405.17037},
+        archivePrefix={arXiv},
+        primaryClass={cs.CV}
+    }
 
 ## 📧 Contact
 

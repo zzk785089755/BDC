@@ -1,5 +1,12 @@
 # BDC-Det
 
+## Main Results
+
+<p align="center">
+  <img src="figs/det_results.jpg" width="80%">
+</p>
+
+
 ## Get Started
 
 #### Installation and Data Preparation
@@ -34,4 +41,6 @@ python tools/test.py $config $checkpoint --eval mAP
 bash ./tools/dist_test.sh $config $checkpoint num_gpu --eval mAP
 ```
 
-## Acknowledgement
+## Model Zoo
+
+Please download checkpoints from [Google Drive](https://drive.google.com/drive/folders/1mCQcnAgqfijLyiPurekxWcnf9oJ0ZvsZ).

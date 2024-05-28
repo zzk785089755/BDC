@@ -1,5 +1,12 @@
 # BDC-Occ: Binarized Deep Convolution Unit For Binarized Occupancy Network
 
+## Main Results
+
+<p align="center">
+  <img src="figs/occ_results.jpg" width="80%">
+</p>
+
+
 ## Get Started
 step 1. Please create environment.
 ```shell script
@@ -61,3 +68,6 @@ python tools/test.py ./projects/configs/bdc_occ/${MODEL_NAME}.py ${path_to_check
 CUDA_VISIBLE_DEVICES=2,3,4,5 bash ./tools/dist_test.sh ./projects/configs/bdc_occ/${MODEL_NAME}.py ${path_to_checkpoint} 4 --eval mAP
 ```
 
+## Model Zoo
+
+Please download checkpoints from [Google Drive](https://drive.google.com/drive/folders/1mCQcnAgqfijLyiPurekxWcnf9oJ0ZvsZ).
