@@ -14,8 +14,8 @@ from ..model_utils.quant_tools.quant_convs_BBCU import (BinaryConv2dBBCU, BasicB
                                                                         )
 from ..model_utils.quant_tools.quant_convs_BiMatting import BinaryConv2dBiMatting
 from ..model_utils.quant_tools.quant_convs_BDC import (BinaryConv2dBDC, BasicBinaryBlockBDC, DownsampleBinaryBlockBDC, BinaryConv2dBDC_Down,)
-
-
+from ..model_utils.quant_tools.quant_convs_BRVE import (BinaryConv2dBRVE, BasicBinaryBlockBRVE, DownsampleBinaryBlockBRVE, BinaryConv2dBRVE_Down,)
+from ..model_utils.quant_tools.quant_convs_JDB import (BinaryConv2dJDB, BasicBinaryBlockJDB, DownsampleBinaryBlockJDB, BinaryConv2dJDB_Down,)
 @BACKBONES.register_module()
 class CustomResNet(nn.Module):
     def __init__(
@@ -689,6 +689,291 @@ class BinaryResNetBDCDown(nn.Module):
                         )]
             curr_numC = num_channels[i]
             layer.extend([BasicBinaryBlockBDC(channels_in=curr_numC, channels_out=num_channels[i], stride=1,
+                                        downsample=None, with_bn=with_bn) for _ in range(num_layer[i] - 1)])
+            layers.append(nn.Sequential(*layer))
+
+
+        self.layers = nn.Sequential(*layers)
+        self.with_cp = with_cp
+
+    def forward(self, x):
+        """
+        Args:
+            x: (B, C=64, Dy, Dx)
+        Returns:
+            feats: List[
+                (B, 2*C, Dy/2, Dx/2),
+                (B, 4*C, Dy/4, Dx/4),
+                (B, 8*C, Dy/8, Dx/8),
+            ]
+        """
+        feats = []
+        x_tmp = x
+        for lid, layer in enumerate(self.layers):
+            if self.with_cp:
+                x_tmp = checkpoint.checkpoint(layer, x_tmp)
+            else:
+                x_tmp = layer(x_tmp)
+            if lid in self.backbone_output_ids:
+                feats.append(x_tmp)
+        return feats
+
+
+
+
+@BACKBONES.register_module()
+class BinaryResNetBRVE(nn.Module):
+    '''
+        BRVE
+    '''
+    def __init__(
+            self,
+            numC_input,
+            num_layer=[2, 2, 2],
+            num_channels=None,
+            stride=[2, 2, 2],
+            backbone_output_ids=None,
+            with_cp=False,
+            with_bn=False,
+    ):
+        super(BinaryResNetBRVE, self).__init__()
+        # build backbone
+        assert len(num_layer) == len(stride)
+        num_channels = [numC_input*2**(i+1) for i in range(len(num_layer))] \
+            if num_channels is None else num_channels
+        self.backbone_output_ids = range(len(num_layer)) \
+            if backbone_output_ids is None else backbone_output_ids
+
+        layers = []
+
+        curr_numC = numC_input
+        for i in range(len(num_layer)):
+            # 在第一个block中对输入进行downsample
+            layer = [BasicBinaryBlockBRVE(channels_in=curr_numC, channels_out=num_channels[i], stride=stride[i],
+                                downsample=BinaryConv2dBRVE(curr_numC, num_channels[i], 3, stride[i], 1, with_bn=with_bn),
+                                with_bn=with_bn
+                                )]
+            curr_numC = num_channels[i]
+            layer.extend([BasicBinaryBlockBRVE(channels_in=curr_numC, channels_out=num_channels[i], stride=1,
+                                        downsample=None, with_bn=with_bn) for _ in range(num_layer[i] - 1)])
+            layers.append(nn.Sequential(*layer))
+
+
+        self.layers = nn.Sequential(*layers)
+        self.with_cp = with_cp
+
+    def forward(self, x):
+        """
+        Args:
+            x: (B, C=64, Dy, Dx)
+        Returns:
+            feats: List[
+                (B, 2*C, Dy/2, Dx/2),
+                (B, 4*C, Dy/4, Dx/4),
+                (B, 8*C, Dy/8, Dx/8),
+            ]
+        """
+        feats = []
+        x_tmp = x
+        for lid, layer in enumerate(self.layers):
+            if self.with_cp:
+                x_tmp = checkpoint.checkpoint(layer, x_tmp)
+            else:
+                x_tmp = layer(x_tmp)
+            if lid in self.backbone_output_ids:
+                feats.append(x_tmp)
+        return feats
+
+
+@BACKBONES.register_module()
+class BinaryResNetBRVEDown(nn.Module):
+    '''
+        BRVE_Down
+    '''
+    def __init__(
+            self,
+            numC_input,
+            num_layer=[2, 2, 2],
+            num_channels=None,
+            stride=[2, 2, 2],
+            backbone_output_ids=None,
+            with_cp=False,
+            with_bn=False,
+    ):
+        super(BinaryResNetBRVEDown, self).__init__()
+        # build backbone
+        assert len(num_layer) == len(stride)
+        num_channels = [numC_input*2**(i+1) for i in range(len(num_layer))] \
+            if num_channels is None else num_channels
+        self.backbone_output_ids = range(len(num_layer)) \
+            if backbone_output_ids is None else backbone_output_ids
+
+        layers = []
+
+        curr_numC = numC_input
+        for i in range(len(num_layer)):
+            # 在第一个block中对输入进行downsample
+            # layer = [DownsampleBinaryBlockBiSRNet(channels_in=curr_numC, channels_out=num_channels[i], stride=stride[i],
+            #                     downsample=BinaryConv2dBiSRNet_Down(curr_numC, num_channels[i], 3, stride[i], 1)
+            #                     )]
+            if i == 0:
+                # if curr_numC == num_channels[i]:
+                #     downsample_module = 
+                # else:
+                #     downsample_module = BinaryConv2dBiSRNet_Down(curr_numC, num_channels[i], 3, stride[i], 1)
+                layer = [BasicBinaryBlockBRVE(channels_in=curr_numC, channels_out=num_channels[i], stride=stride[i],
+                    downsample=BinaryConv2dBRVE(curr_numC, num_channels[i], 3, stride[i], 1),
+                    with_bn=with_bn
+                    )]
+            else:
+                layer = [DownsampleBinaryBlockBRVE(channels_in=curr_numC, channels_out=num_channels[i], stride=1,
+                        downsample=BinaryConv2dBRVE_Down(curr_numC, num_channels[i], 3, 1, 1),
+                        with_bn=with_bn
+                        )]
+            curr_numC = num_channels[i]
+            layer.extend([BasicBinaryBlockBRVE(channels_in=curr_numC, channels_out=num_channels[i], stride=1,
+                                        downsample=None, with_bn=with_bn) for _ in range(num_layer[i] - 1)])
+            layers.append(nn.Sequential(*layer))
+
+
+        self.layers = nn.Sequential(*layers)
+        self.with_cp = with_cp
+
+    def forward(self, x):
+        """
+        Args:
+            x: (B, C=64, Dy, Dx)
+        Returns:
+            feats: List[
+                (B, 2*C, Dy/2, Dx/2),
+                (B, 4*C, Dy/4, Dx/4),
+                (B, 8*C, Dy/8, Dx/8),
+            ]
+        """
+        feats = []
+        x_tmp = x
+        for lid, layer in enumerate(self.layers):
+            if self.with_cp:
+                x_tmp = checkpoint.checkpoint(layer, x_tmp)
+            else:
+                x_tmp = layer(x_tmp)
+            if lid in self.backbone_output_ids:
+                feats.append(x_tmp)
+        return feats
+    
+
+
+@BACKBONES.register_module()
+class BinaryResNetJDB(nn.Module):
+    '''
+        JDB
+    '''
+    def __init__(
+            self,
+            numC_input,
+            num_layer=[2, 2, 2],
+            num_channels=None,
+            stride=[2, 2, 2],
+            backbone_output_ids=None,
+            with_cp=False,
+            with_bn=False,
+    ):
+        super(BinaryResNetJDB, self).__init__()
+        # build backbone
+        assert len(num_layer) == len(stride)
+        num_channels = [numC_input*2**(i+1) for i in range(len(num_layer))] \
+            if num_channels is None else num_channels
+        self.backbone_output_ids = range(len(num_layer)) \
+            if backbone_output_ids is None else backbone_output_ids
+
+        layers = []
+
+        curr_numC = numC_input
+        for i in range(len(num_layer)):
+            # 在第一个block中对输入进行downsample
+            layer = [BasicBinaryBlockJDB(channels_in=curr_numC, channels_out=num_channels[i], stride=stride[i],
+                                downsample=BinaryConv2dJDB(curr_numC, num_channels[i], 3, stride[i], 1, with_bn=with_bn),
+                                with_bn=with_bn
+                                )]
+            curr_numC = num_channels[i]
+            layer.extend([BasicBinaryBlockJDB(channels_in=curr_numC, channels_out=num_channels[i], stride=1,
+                                        downsample=None, with_bn=with_bn) for _ in range(num_layer[i] - 1)])
+            layers.append(nn.Sequential(*layer))
+
+
+        self.layers = nn.Sequential(*layers)
+        self.with_cp = with_cp
+
+    def forward(self, x):
+        """
+        Args:
+            x: (B, C=64, Dy, Dx)
+        Returns:
+            feats: List[
+                (B, 2*C, Dy/2, Dx/2),
+                (B, 4*C, Dy/4, Dx/4),
+                (B, 8*C, Dy/8, Dx/8),
+            ]
+        """
+        feats = []
+        x_tmp = x
+        for lid, layer in enumerate(self.layers):
+            if self.with_cp:
+                x_tmp = checkpoint.checkpoint(layer, x_tmp)
+            else:
+                x_tmp = layer(x_tmp)
+            if lid in self.backbone_output_ids:
+                feats.append(x_tmp)
+        return feats
+
+
+@BACKBONES.register_module()
+class BinaryResNetJDBDown(nn.Module):
+    '''
+        JDB_Down
+    '''
+    def __init__(
+            self,
+            numC_input,
+            num_layer=[2, 2, 2],
+            num_channels=None,
+            stride=[2, 2, 2],
+            backbone_output_ids=None,
+            with_cp=False,
+            with_bn=False,
+    ):
+        super(BinaryResNetJDBDown, self).__init__()
+        # build backbone
+        assert len(num_layer) == len(stride)
+        num_channels = [numC_input*2**(i+1) for i in range(len(num_layer))] \
+            if num_channels is None else num_channels
+        self.backbone_output_ids = range(len(num_layer)) \
+            if backbone_output_ids is None else backbone_output_ids
+
+        layers = []
+
+        curr_numC = numC_input
+        for i in range(len(num_layer)):
+            # 在第一个block中对输入进行downsample
+            # layer = [DownsampleBinaryBlockBiSRNet(channels_in=curr_numC, channels_out=num_channels[i], stride=stride[i],
+            #                     downsample=BinaryConv2dBiSRNet_Down(curr_numC, num_channels[i], 3, stride[i], 1)
+            #                     )]
+            if i == 0:
+                # if curr_numC == num_channels[i]:
+                #     downsample_module = 
+                # else:
+                #     downsample_module = BinaryConv2dBiSRNet_Down(curr_numC, num_channels[i], 3, stride[i], 1)
+                layer = [BasicBinaryBlockJDB(channels_in=curr_numC, channels_out=num_channels[i], stride=stride[i],
+                    downsample=BinaryConv2dJDB(curr_numC, num_channels[i], 3, stride[i], 1),
+                    with_bn=with_bn
+                    )]
+            else:
+                layer = [DownsampleBinaryBlockJDB(channels_in=curr_numC, channels_out=num_channels[i], stride=1,
+                        downsample=BinaryConv2dJDB_Down(curr_numC, num_channels[i], 3, 1, 1),
+                        with_bn=with_bn
+                        )]
+            curr_numC = num_channels[i]
+            layer.extend([BasicBinaryBlockJDB(channels_in=curr_numC, channels_out=num_channels[i], stride=1,
                                         downsample=None, with_bn=with_bn) for _ in range(num_layer[i] - 1)])
             layers.append(nn.Sequential(*layer))
 

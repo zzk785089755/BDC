@@ -1,0 +1,8 @@
+# ninja log v5
+1	12191	1726819424730865348	/media/data2/lingp/BDC-LP/BDC-Occ/projects/build/temp.linux-x86_64-cpython-38/mmdet3d_plugin/ops/bev_pool/src/bev_sum_pool.o	31ebba2df6e75b22
+0	12276	1726819424818864116	/media/data2/lingp/BDC-LP/BDC-Occ/projects/build/temp.linux-x86_64-cpython-38/mmdet3d_plugin/ops/bev_pool/src/bev_max_pool.o	29d128a174b73818
+0	14211	1726819426750837046	/media/data2/lingp/BDC-LP/BDC-Occ/projects/build/temp.linux-x86_64-cpython-38/mmdet3d_plugin/ops/bev_pool/src/bev_pooling.o	59b5a73211eeeb7b
+1	27948	1726819440490644610	/media/data2/lingp/BDC-LP/BDC-Occ/projects/build/temp.linux-x86_64-cpython-38/mmdet3d_plugin/ops/bev_pool/src/bev_sum_pool_cuda.o	273360f6f03f4e1a
+0	28233	1726819440774640633	/media/data2/lingp/BDC-LP/BDC-Occ/projects/build/temp.linux-x86_64-cpython-38/mmdet3d_plugin/ops/bev_pool/src/bev_max_pool_cuda.o	41fbdf8cd434cdb4
+1	413	1726819441878625178	/media/data2/lingp/BDC-LP/BDC-Occ/projects/build/temp.linux-x86_64-cpython-38/mmdet3d_plugin/ops/bev_pool_v2/src/bev_pool_cuda.o	57029cab49e2ad1
+1	13064	1726819454522448212	/media/data2/lingp/BDC-LP/BDC-Occ/projects/build/temp.linux-x86_64-cpython-38/mmdet3d_plugin/ops/bev_pool_v2/src/bev_pool.o	b2cbe5837d18bc2b

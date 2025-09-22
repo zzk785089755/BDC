@@ -102,27 +102,58 @@ class HardBinaryConv(nn.Conv2d):
 
 
 
+# class SEBlock(nn.Module):
+#     def __init__(self, in_channels, reduction=16, with_cp = False):
+#         super(SEBlock, self).__init__()
+#         self.with_cp = with_cp
+#         self.avg_pool = nn.AdaptiveAvgPool2d(1)
+#         self.fc = nn.Sequential(
+#             binaryconv1x1(in_planes=in_channels, out_planes=in_channels//reduction, stride=1, bias=False),
+#             RPReLU(in_channels),    
+#             binaryconv1x1(in_planes=in_channels//reduction, out_planes=in_channels, stride=1, bias=False),
+#             nn.Sigmoid()
+#         )
+
+#     def forward(self, x):
+#         b, c, _, _ = x.size()
+#         y = self.avg_pool(x)
+#         if self.with_cp:
+#             y = checkpoint(self.fc, y)
+#         else:
+#             y = self.fc(y)
+#         return x * y
+
 class SEBlock(nn.Module):
     def __init__(self, in_channels, reduction=16, with_cp = False):
         super(SEBlock, self).__init__()
         self.with_cp = with_cp
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
+        self.with_bn = False
         self.fc = nn.Sequential(
             binaryconv1x1(in_planes=in_channels, out_planes=in_channels//reduction, stride=1, bias=False),
             RPReLU(in_channels),    
             binaryconv1x1(in_planes=in_channels//reduction, out_planes=in_channels, stride=1, bias=False),
             nn.Sigmoid()
         )
-
+        self.fc2 = nn.Sequential(
+            binaryconv1x1(in_planes=in_channels, out_planes=in_channels//reduction, stride=1, bias=False),
+            RPReLU(in_channels),    
+            binaryconv1x1(in_planes=in_channels//reduction, out_planes=in_channels, stride=1, bias=False),
+            nn.Tanh() 
+        )
     def forward(self, x):
-        b, c, _, _ = x.size()
+        b, c, h, w = x.size()
         y = self.avg_pool(x)
         if self.with_cp:
-            y = checkpoint(self.fc, y)
+            scale_x = checkpoint(self.fc, y)
+            bias_x = checkpoint(self.fc2, y)
         else:
-            y = self.fc(y)
-        return x * y
-    
+            scale_x = self.fc(y)
+            bias_x = self.fc2(y)
+
+        return scale_x * x + bias_x
+
+
 # --------------------------------------------- Binarized Conv Units -----------------------------------------------------------------
 
 class BinaryConv2dBDC(nn.Module):
